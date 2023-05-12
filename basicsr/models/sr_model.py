@@ -88,10 +88,14 @@ class SRModel(BaseModel):
         self.lq = data['lq'].to(self.device)
         if 'gt' in data:
             self.gt = data['gt'].to(self.device)
+        self.is_depth = 'depth_lq' in data
+        if self.is_depth:
+            self.depth_lq = data['depth_lq'].to(self.device)
+            self.depth_gt = data['depth_gt'].to(self.device)
 
     def optimize_parameters(self, current_iter):
         self.optimizer_g.zero_grad()
-        self.output = self.net_g(self.lq)
+        self.output = self.net_g(self.lq, self.depth_lq) if self.is_depth else self.net_g(self.lq)
 
         l_total = 0
         loss_dict = OrderedDict()
@@ -122,11 +126,11 @@ class SRModel(BaseModel):
         if hasattr(self, 'net_g_ema'):
             self.net_g_ema.eval()
             with torch.no_grad():
-                self.output = self.net_g_ema(self.lq)
+                self.output = self.net_g_ema(self.lq, self.depth_lq) if self.is_depth else self.net_g_ema(self.lq)
         else:
             self.net_g.eval()
             with torch.no_grad():
-                self.output = self.net_g(self.lq)
+                self.output = self.net_g(self.lq, self.depth_lq) if self.is_depth else self.net_g(self.lq)
             self.net_g.train()
 
     def test_selfensemble(self):
