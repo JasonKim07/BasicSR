@@ -23,7 +23,7 @@ def mod_crop(img, scale):
     return img
 
 
-def paired_random_crop(img_gts, img_lqs, gt_patch_size, scale, gt_path=None):
+def paired_random_crop(img_gts, img_lqs, gt_patch_size, scale, gt_path=None, depth_gts=None, depth_lqs=None):
     """Paired random crop. Support Numpy array and Tensor inputs.
 
     It crops lists of lq and gt images with corresponding locations.
@@ -38,17 +38,25 @@ def paired_random_crop(img_gts, img_lqs, gt_patch_size, scale, gt_path=None):
         gt_patch_size (int): GT patch size.
         scale (int): Scale factor.
         gt_path (str): Path to ground-truth. Default: None.
+        depth_gts (list[ndarray] | ndarray | list[Tensor] | Tensor): GT Depth images. (Optional)
+        depth_lqs (list[ndarray] | ndarray): LQ Depth images. Note that all images (Optional)
 
     Returns:
         list[ndarray] | ndarray: GT images and LQ images. If returned results
             only have one element, just return ndarray.
     """
-
+    is_depth = depth_gts is not None
+    
     if not isinstance(img_gts, list):
         img_gts = [img_gts]
     if not isinstance(img_lqs, list):
         img_lqs = [img_lqs]
-
+    if is_depth:
+        if not isinstance(depth_gts, list):
+            depth_gts = [depth_gts]
+        if not isinstance(depth_lqs, list):
+            depth_lqs = [depth_lqs]
+            
     # determine input type: Numpy array or Tensor
     input_type = 'Tensor' if torch.is_tensor(img_gts[0]) else 'Numpy'
 
@@ -77,6 +85,11 @@ def paired_random_crop(img_gts, img_lqs, gt_patch_size, scale, gt_path=None):
         img_lqs = [v[:, :, top:top + lq_patch_size, left:left + lq_patch_size] for v in img_lqs]
     else:
         img_lqs = [v[top:top + lq_patch_size, left:left + lq_patch_size, ...] for v in img_lqs]
+    if is_depth:
+        if input_type == 'Tensor':
+            depth_lqs = [v[:, :, top:top + lq_patch_size, left:left + lq_patch_size] for v in depth_lqs]
+        else:
+            depth_lqs = [v[top:top + lq_patch_size, left:left + lq_patch_size, ...] for v in depth_lqs]
 
     # crop corresponding gt patch
     top_gt, left_gt = int(top * scale), int(left * scale)
@@ -84,11 +97,21 @@ def paired_random_crop(img_gts, img_lqs, gt_patch_size, scale, gt_path=None):
         img_gts = [v[:, :, top_gt:top_gt + gt_patch_size, left_gt:left_gt + gt_patch_size] for v in img_gts]
     else:
         img_gts = [v[top_gt:top_gt + gt_patch_size, left_gt:left_gt + gt_patch_size, ...] for v in img_gts]
+    if is_depth:
+        if input_type == 'Tensor':
+            depth_gts = [v[:, :, top_gt:top_gt + gt_patch_size, left_gt:left_gt + gt_patch_size] for v in depth_gts]
+        else:
+            depth_gts = [v[top_gt:top_gt + gt_patch_size, left_gt:left_gt + gt_patch_size, ...] for v in depth_gts]
     if len(img_gts) == 1:
         img_gts = img_gts[0]
     if len(img_lqs) == 1:
         img_lqs = img_lqs[0]
-    return img_gts, img_lqs
+    if is_depth:
+        if len(depth_gts) == 1:
+            depth_gts = depth_gts[0]
+        if len(depth_lqs) == 1:
+            depth_lqs = depth_lqs[0]
+    return (img_gts, img_lqs, depth_gts, depth_lqs) if is_depth else (img_gts, img_lqs)
 
 
 def augment(imgs, hflip=True, rotation=True, flows=None, return_status=False):
