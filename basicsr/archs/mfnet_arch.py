@@ -143,7 +143,7 @@ class MFNet(nn.Module):
         num_grow_ch (int): Channels for each growth. Default: 32.
     """
 
-    def __init__(self, num_in_ch, num_out_ch, scale=4, num_feat=64, num_block=23, num_grow_ch=32, is_adapt=True):
+    def __init__(self, num_in_ch, num_out_ch, scale=4, num_feat=64, num_block=23, num_grow_ch=32):
         super(MFNet, self).__init__()
 
         self.ratb1 = RATB()
@@ -155,14 +155,14 @@ class MFNet(nn.Module):
             num_in_ch = num_in_ch * 4
         elif scale == 1:
             num_in_ch = num_in_ch * 16
-        
+
         self.conv_first = nn.Conv2d(num_in_ch, num_feat, 3, 1, 1)
-        self.RRDBNet = make_layer(RRDB, num_block, num_feat=num_feat, num_grow_ch=num_grow_ch)
+        self.RRDB = make_layer(RRDB, num_block, num_feat=num_feat, num_grow_ch=num_grow_ch)
         self.conv_body = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
-        
+
         self.conv_cond = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
         self.bn = nn.BatchNorm2d(64)
-        
+
         # upsample
         self.conv_up1 = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
         self.conv_up2 = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
@@ -181,15 +181,15 @@ class MFNet(nn.Module):
         else:
             feat = x
             condition = c
-        
+
         feat = self.conv_first(feat)
-        body_feat = self.conv_body(self.RRDBNet(feat))
-        
+        body_feat = self.conv_body(self.RRDB(feat))
+
         condition = self.bn(self.conv_first(condition))
         condition = self.bn(self.conv_cond(condition))
         condition = self.bn(self.conv_cond(condition))
         condition = self.bn(self.conv_cond(condition))
-        
+
         feat = self.ratb1(feat, condition)
         feat = self.ratb2(feat, condition)
         feat = self.aft1(feat, condition)
