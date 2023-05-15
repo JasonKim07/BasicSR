@@ -219,7 +219,7 @@ def paired_paths_from_folder(folders, keys, filename_tmpl):
     input_key, gt_key = keys
 
     input_paths = list(scandir(input_folder))
-    gt_paths = list(scandir(gt_folder))
+    gt_paths = [path.replace('-dpt_beit_large_512', '') for path in list(scandir(gt_folder)) if osp.splitext(path)[1] == '.png']
     assert len(input_paths) == len(gt_paths), (f'{input_key} and {gt_key} datasets have different number of images: '
                                                f'{len(input_paths)}, {len(gt_paths)}.')
     paths = []

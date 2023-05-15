@@ -7,7 +7,7 @@ from basicsr.utils.download_util import download_file_from_google_drive
 
 
 def download_dataset(dataset, file_ids):
-    save_path_root = './datasets/'
+    save_path_root = '/storage/super_resolution/datasets/'
     os.makedirs(save_path_root, exist_ok=True)
 
     for file_name, file_id in file_ids.items():
